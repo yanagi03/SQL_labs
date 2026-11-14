@@ -67,8 +67,7 @@ SELECT
     d.end_time,
     ROUND(
         EXTRACT(EPOCH FROM
-            d.end_time - d.start_time) / 3600, 2
-    ) AS downtime_hours,
+            d.end_time - d.start_time) / 3600, 2) AS downtime_hours,
     d.downtime_category,
     d.reason
 FROM equipment_downtime AS d
@@ -86,8 +85,7 @@ SELECT
     d.start_time,
     COALESCE(
         d.end_time::text,
-        'НЕ ЗАКРЫТ'
-    ) AS end_time_status
+        'НЕ ЗАКРЫТ') AS end_time_status
 FROM equipment_downtime AS d
 JOIN production_lines AS l
     ON d.line_id = l.line_id
@@ -111,17 +109,9 @@ SELECT
     p.product_name,
     rm.material_name,
     ROUND(
-        r.qty_per_unit * b.produced_qty, 2
-    ) AS norm_qty,
+        r.qty_per_unit * b.produced_qty, 2) AS norm_qty,
     mc.quantity AS actual_qty,
-    ROUND(
-        100.0 * (
-            mc.quantity -
-            r.qty_per_unit * b.produced_qty
-        ) / NULLIF(
-            r.qty_per_unit * b.produced_qty, 0
-        ), 2
-    ) AS excess_percent
+    ROUND(100.0 * (mc.quantity -r.qty_per_unit * b.produced_qty) / NULLIF(r.qty_per_unit * b.produced_qty, 0), 2) AS excess_percent
 FROM production_batches AS b
 JOIN products AS p
     ON b.product_id = p.product_id
@@ -171,14 +161,10 @@ SELECT
 FROM generate_series(
     DATE '2025-01-01',
     DATE '2025-12-31',
-    INTERVAL '1 day'
-) AS days(day_date)
+    INTERVAL '1 day') AS days(day_date)
 CROSS JOIN production_lines AS l
 CROSS JOIN (
-    VALUES
-        ('Д', 'дневная'),
-        ('Н', 'ночная')
-) AS shifts(shift_code, shift_name)
+    VALUES('Д', 'дневная'),('Н', 'ночная')) AS shifts(shift_code, shift_name)
 LEFT JOIN production_batches AS b
     ON b.production_date = days.day_date::date
    AND b.line_id = l.line_id
