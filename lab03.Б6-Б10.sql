@@ -5,14 +5,8 @@ SET search_path TO pitanie, public;
 -- Б6. Опоздания и качество поставок
 
 -- Б6.1. Поставки с опозданием более трёх дней
-SELECT
-    s.supplier_name,
-    r.material_name,
-    po.expected_date,
-    poi.received_date,
-    poi.received_date::date -
-        po.expected_date::date AS delay_days,
-    poi.quality_status
+SELECT s.supplier_name, r.material_name, po.expected_date,poi.received_date,
+    poi.received_date::date - po.expected_date::date AS delay_days,poi.quality_status
 FROM purchase_order_items AS poi
 JOIN purchase_orders AS po
     ON poi.po_id = po.po_id
@@ -26,11 +20,7 @@ ORDER BY delay_days DESC;
 
 
 -- Б6.2. Позиции с качеством, отличным от «Принято»
-SELECT
-    poi.po_item_id,
-    s.supplier_name,
-    r.material_name,
-    poi.quality_status
+SELECT poi.po_item_id, s.supplier_name, r.material_name, poi.quality_status
 FROM purchase_order_items AS poi
 JOIN purchase_orders AS po
     ON poi.po_id = po.po_id
@@ -41,12 +31,7 @@ JOIN raw_materials AS r
 WHERE poi.quality_status <> 'Принято';
 
 -- Б6.3. Неполученные позиции
-SELECT
-    poi.po_item_id,
-    po.po_number,
-    s.supplier_name,
-    r.material_name,
-    po.expected_date
+SELECT poi.po_item_id, po.po_number, s.supplier_name, r.material_name, po.expected_date
 FROM purchase_order_items AS poi
 JOIN purchase_orders AS po
     ON poi.po_id = po.po_id
@@ -59,17 +44,12 @@ WHERE poi.received_date IS NULL;
 -- Б7. Простои с линией и ответственным
 
 -- Б7.1. Все простои
-SELECT
-    d.downtime_id,
-    l.line_name,
-    e.full_name AS responsible,
-    d.start_time,
-    d.end_time,
+SELECT d.downtime_id, l.line_name, e.full_name AS responsible,
+    d.start_time, d.end_time,
     ROUND(
         EXTRACT(EPOCH FROM
             d.end_time - d.start_time) / 3600, 2) AS downtime_hours,
-    d.downtime_category,
-    d.reason
+    d.downtime_category,d.reason
 FROM equipment_downtime AS d
 JOIN production_lines AS l
     ON d.line_id = l.line_id
@@ -78,11 +58,7 @@ LEFT JOIN employees AS e
 ORDER BY d.start_time;
 
 -- Б7.2. Незакрытые простои
-SELECT
-    d.downtime_id,
-    l.line_name,
-    e.full_name AS responsible,
-    d.start_time,
+SELECT d.downtime_id, l.line_name, e.full_name AS responsible, d.start_time,
     COALESCE(
         d.end_time::text,
         'НЕ ЗАКРЫТ') AS end_time_status
@@ -104,10 +80,7 @@ GROUP BY EXTRACT(YEAR FROM start_time)
 ORDER BY year;
 
 -- Б8. Норма и фактический расход сырья
-SELECT
-    b.batch_number,
-    p.product_name,
-    rm.material_name,
+SELECT b.batch_number, p.product_name, rm.material_name,
     ROUND(
         r.qty_per_unit * b.produced_qty, 2) AS norm_qty,
     mc.quantity AS actual_qty,
@@ -132,12 +105,7 @@ ORDER BY b.batch_number;
 -- Б9*. Списания и материалы без списаний
 
 -- Б9.1. Списания клубничного наполнителя
-SELECT
-    r.material_name,
-    r.shelf_life_days,
-    w.quantity,
-    w.amount,
-    w.reason
+SELECT r.material_name, r.shelf_life_days, w.quantity, w.amount, w.reason
 FROM material_writeoffs AS w
 JOIN raw_materials AS r
     ON w.material_id = r.material_id
@@ -145,18 +113,14 @@ WHERE w.material_id = 10
 ORDER BY w.writeoff_date;
 
 -- Б9.2. Материалы, которые ни разу не списывались
-SELECT
-    r.material_id,
-    r.material_name
+SELECT r.material_id, r.material_name
 FROM raw_materials AS r
 LEFT JOIN material_writeoffs AS w
     ON r.material_id = w.material_id
 WHERE w.writeoff_id IS NULL;
 
 -- Б10*. Пропущенные смены
-SELECT
-    l.line_name,
-    shifts.shift_name,
+SELECT l.line_name, shifts.shift_name,
     COUNT(*) AS missing_shifts
 FROM generate_series(
     DATE '2025-01-01',
@@ -170,8 +134,5 @@ LEFT JOIN production_batches AS b
    AND b.line_id = l.line_id
    AND UPPER(LEFT(b.shift, 1)) = shifts.shift_code
 WHERE b.batch_id IS NULL
-GROUP BY
-    l.line_id,
-    l.line_name,
-    shifts.shift_name
+GROUP BY l.line_id, l.line_name, shifts.shift_name
 ORDER BY l.line_id, shifts.shift_name;
