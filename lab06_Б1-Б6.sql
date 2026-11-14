@@ -10,24 +10,21 @@ SELECT COUNT(*) AS inn_count
 FROM (
     SELECT c.inn FROM customers AS c
     UNION ALL
-    SELECT s.inn FROM suppliers AS s
-) AS all_inn;
+    SELECT s.inn FROM suppliers AS s) AS all_inn;
 
 -- О2. Число различных ИНН с UNION.
 SELECT COUNT(*) AS unique_inn_count
 FROM (
     SELECT c.inn FROM customers AS c
     UNION
-    SELECT s.inn FROM suppliers AS s
-) AS unique_inn;
+    SELECT s.inn FROM suppliers AS s) AS unique_inn;
 
 -- О3. Какие ИНН повторяются и сколько раз?
 SELECT x.inn, COUNT(*) AS records_count
 FROM (
     SELECT c.inn FROM customers AS c
     UNION ALL
-    SELECT s.inn FROM suppliers AS s
-) AS x
+    SELECT s.inn FROM suppliers AS s) AS x
 GROUP BY x.inn
 HAVING COUNT(*) > 1
 ORDER BY records_count DESC, x.inn;
@@ -56,9 +53,7 @@ FROM (
     FROM production_batches AS b
     JOIN products AS p ON p.product_id = b.product_id
     WHERE b.defect_qty > 0
-
     UNION ALL
-
     SELECT
         'Простой'::text,
         d.start_time::date,
@@ -68,9 +63,7 @@ FROM (
         NULL::numeric
     FROM equipment_downtime AS d
     WHERE d.end_time IS NOT NULL
-
     UNION ALL
-
     SELECT
         'Списание'::text,
         w.writeoff_date::date,
@@ -80,8 +73,7 @@ FROM (
         w.amount::numeric
     FROM material_writeoffs AS w
     JOIN raw_materials AS rm ON rm.material_id = w.material_id
-    WHERE w.quantity > 0
-) AS j
+    WHERE w.quantity > 0) AS j
 GROUP BY j.event_type, EXTRACT(YEAR FROM j.event_date), j.unit
 ORDER BY j.event_type, event_year, j.unit;
 
@@ -133,15 +125,12 @@ FROM (
     JOIN purchase_order_items AS poi ON poi.po_id = po.po_id
     WHERE po.order_date >= DATE '2025-01-01'
       AND po.order_date < DATE '2026-01-01'
-
     EXCEPT
-
     SELECT po.supplier_id, poi.material_id
     FROM purchase_orders AS po
     JOIN purchase_order_items AS poi ON poi.po_id = po.po_id
     WHERE po.order_date >= DATE '2024-01-01'
-      AND po.order_date < DATE '2025-01-01'
-) AS np
+      AND po.order_date < DATE '2025-01-01') AS np
 JOIN suppliers AS s ON s.supplier_id = np.supplier_id
 JOIN raw_materials AS rm ON rm.material_id = np.material_id
 ORDER BY np.supplier_id, np.material_id;
@@ -154,14 +143,11 @@ WHERE s.supplier_id IN (
     FROM purchase_orders AS po
     WHERE po.order_date >= DATE '2025-01-01'
       AND po.order_date < DATE '2026-01-01'
-
     EXCEPT
-
     SELECT po.supplier_id
     FROM purchase_orders AS po
     WHERE po.order_date >= DATE '2024-01-01'
-      AND po.order_date < DATE '2025-01-01'
-);
+      AND po.order_date < DATE '2025-01-01');
 
 -- Б4. ОБЩИЕ МАТЕРИАЛЫ ПОСТАВЩИКОВ (INTERSECT)
 -- Б4.1. Материалы АгроСнаба (supplier_id = 3), которые есть у конкурентов.
@@ -172,14 +158,11 @@ WHERE rm.material_id IN (
     FROM purchase_orders AS po
     JOIN purchase_order_items AS poi ON poi.po_id = po.po_id
     WHERE po.supplier_id = 3
-
     INTERSECT
-
     SELECT poi.material_id
     FROM purchase_orders AS po
     JOIN purchase_order_items AS poi ON poi.po_id = po.po_id
-    WHERE po.supplier_id <> 3
-)
+    WHERE po.supplier_id <> 3)
 ORDER BY rm.material_id;
 
 
@@ -205,8 +188,7 @@ CROSS JOIN LATERAL (
     JOIN purchase_order_items AS poi ON poi.po_id = po.po_id
     WHERE po.supplier_id = s.supplier_id
     ORDER BY po.order_date DESC, poi.po_item_id DESC
-    LIMIT 3
-) AS last3
+    LIMIT 3) AS last3
 JOIN raw_materials AS rm ON rm.material_id = last3.material_id
 LEFT JOIN LATERAL (
     SELECT MIN(poi2.unit_price) AS min_price
@@ -215,8 +197,7 @@ LEFT JOIN LATERAL (
     WHERE po2.supplier_id <> s.supplier_id
       AND poi2.material_id = last3.material_id
       AND po2.order_date BETWEEN last3.order_date - INTERVAL '90 days'
-                             AND last3.order_date
-) AS competitor ON TRUE
+      AND last3.order_date) AS competitor ON TRUE
 ORDER BY s.supplier_name, last3.order_date DESC, last3.po_item_id DESC;
 
 -- Б6*. КАЛЕНДАРЬ ПРОСТОЕВ ЛИНИИ 2 (LATERAL)
@@ -227,15 +208,12 @@ SELECT
 FROM generate_series(
     DATE '2024-01-01',
     DATE '2025-12-01',
-    INTERVAL '1 month'
-) AS m(month_start)
-LEFT JOIN LATERAL (
-    SELECT
+    INTERVAL '1 month') AS m(month_start)
+LEFT JOIN LATERAL (SELECT
         COUNT(*) AS events_count,
         SUM(EXTRACT(EPOCH FROM (e.end_time - e.start_time)) / 3600) AS hours
     FROM equipment_downtime AS e
     WHERE e.line_id = 2
       AND e.start_time >= m.month_start
-      AND e.start_time < m.month_start + INTERVAL '1 month'
-) AS d ON TRUE
+      AND e.start_time < m.month_start + INTERVAL '1 month') AS d ON TRUE
 ORDER BY m.month_start;
