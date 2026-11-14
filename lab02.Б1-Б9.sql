@@ -133,8 +133,7 @@ WHERE w.reason = 'Истёк срок годности'
       FROM material_writeoffs AS w2
       WHERE w2.reason = 'Истёк срок годности'
       ORDER BY w2.amount DESC
-      LIMIT 1
-  )
+      LIMIT 1)
 GROUP BY r.material_name;
 
 -- Б9*. Когда ломается линия 2 в 2025 году
@@ -154,4 +153,3 @@ WHERE d.line_id = 2
   AND d.start_time >= TIMESTAMP '2025-01-01'
   AND d.start_time < TIMESTAMP '2026-01-01'
 ORDER BY d.start_time;
-
