@@ -7,8 +7,7 @@ SELECT p.product_id, p.product_name, p.base_price
 FROM products AS p
 WHERE p.base_price > (
     SELECT AVG(p2.base_price)
-    FROM products AS p2
-)
+    FROM products AS p2)
 ORDER BY p.base_price DESC;
 
 -- Общая 2. Клиенты без заказов: NOT IN.
@@ -16,8 +15,7 @@ SELECT c.customer_id, c.customer_name
 FROM customers AS c
 WHERE c.customer_id NOT IN (
     SELECT o.customer_id
-    FROM orders AS o
-);
+    FROM orders AS o);
 
 -- Общая 3. Те же клиенты без заказов: NOT EXISTS.
 SELECT c.customer_id, c.customer_name
@@ -25,8 +23,7 @@ FROM customers AS c
 WHERE NOT EXISTS (
     SELECT 1
     FROM orders AS o
-    WHERE o.customer_id = c.customer_id
-);
+    WHERE o.customer_id = c.customer_id);
 
 
 -- Задание Б-1.1. Цена позиции выше средней цены того же материала.
@@ -35,8 +32,7 @@ FROM purchase_order_items AS poi
 WHERE poi.unit_price > (
     SELECT AVG(p2.unit_price)
     FROM purchase_order_items AS p2
-    WHERE p2.material_id = poi.material_id
-);
+    WHERE p2.material_id = poi.material_id);
 
 -- Задание Б-1.2. Цена более чем на 10 % выше средней
 SELECT
@@ -57,8 +53,7 @@ WHERE poi.unit_price > 1.10 * (
     JOIN purchase_orders AS po2 ON po2.po_id = p2.po_id
     WHERE p2.material_id = poi.material_id
       AND DATE_TRUNC('quarter', po2.order_date) =
-          DATE_TRUNC('quarter', po.order_date)
-)
+          DATE_TRUNC('quarter', po.order_date))
 GROUP BY po.supplier_id, poi.material_id
 ORDER BY expensive_items DESC, po.supplier_id;
 
@@ -81,12 +76,10 @@ FROM (
                     AVG(p2.unit_price) AS avg_price
              FROM purchase_order_items AS p2
              JOIN purchase_orders AS po2 ON po2.po_id = p2.po_id
-             GROUP BY p2.material_id, po2.supplier_id
-         ) AS a
+             GROUP BY p2.material_id, po2.supplier_id) AS a
          WHERE a.material_id = poi.material_id) AS best_price
     FROM purchase_order_items AS poi
-    JOIN purchase_orders AS po ON po.po_id = poi.po_id
-) AS t
+    JOIN purchase_orders AS po ON po.po_id = poi.po_id) AS t
 JOIN suppliers AS s ON s.supplier_id = t.supplier_id
 GROUP BY t.supplier_id, s.supplier_name
 ORDER BY overpayment_rub DESC;
@@ -111,8 +104,7 @@ WHERE NOT EXISTS (
     FROM purchase_orders AS po
     JOIN purchase_order_items AS poi ON poi.po_id = po.po_id
     WHERE po.supplier_id = s.supplier_id
-      AND poi.quality_status = 'Отклонено'
-)
+      AND poi.quality_status = 'Отклонено')
 ORDER BY s.supplier_id;
 
 -- Задание Б-3.2. Не было ни «Отклонено», ни «Принято частично».
@@ -123,8 +115,7 @@ WHERE NOT EXISTS (
     FROM purchase_orders AS po
     JOIN purchase_order_items AS poi ON poi.po_id = po.po_id
     WHERE po.supplier_id = s.supplier_id
-      AND poi.quality_status IN ('Отклонено', 'Принято частично')
-)
+      AND poi.quality_status IN ('Отклонено', 'Принято частично'))
 ORDER BY s.supplier_id;
 
 -- Задание Б-3.3. Сравнение закупочных цен сахара-песка (id = 4).
@@ -152,8 +143,7 @@ FROM production_batches AS b
 WHERE 100.0 * b.defect_qty / NULLIF(b.produced_qty, 0) > (
     SELECT 100.0 * SUM(b2.defect_qty) / NULLIF(SUM(b2.produced_qty), 0)
     FROM production_batches AS b2
-    WHERE b2.line_id = b.line_id
-)
+    WHERE b2.line_id = b.line_id)
 GROUP BY b.line_id, b.shift
 ORDER BY b.line_id, b.shift;
 
@@ -170,8 +160,7 @@ FROM production_batches AS b
 WHERE 100.0 * b.defect_qty / NULLIF(b.produced_qty, 0) > 2 * (
     SELECT 100.0 * SUM(b2.defect_qty) / NULLIF(SUM(b2.produced_qty), 0)
     FROM production_batches AS b2
-    WHERE b2.line_id = b.line_id
-)
+    WHERE b2.line_id = b.line_id)
 GROUP BY b.line_id, b.shift, b.operator_id
 ORDER BY batches_count DESC;
 
@@ -216,15 +205,12 @@ FROM (
     WHERE EXISTS (
         SELECT 1
         FROM purchase_order_items AS poi
-        WHERE poi.material_id = rm.material_id
-    )
+        WHERE poi.material_id = rm.material_id)
       AND EXISTS (
         SELECT 1
         FROM material_writeoffs AS w
         WHERE w.material_id = rm.material_id
-          AND w.quantity > 0
-    )
-) AS t
+          AND w.quantity > 0)) AS t
 ORDER BY t.writeoff_amount DESC;
 
 
@@ -253,8 +239,7 @@ FROM (
     JOIN material_consumption AS mc
         ON mc.batch_id = b.batch_id
        AND mc.material_id = r.material_id
-    GROUP BY b.line_id, r.material_id
-) AS x
+    GROUP BY b.line_id, r.material_id) AS x
 JOIN raw_materials AS rm ON rm.material_id = x.material_id
 WHERE x.actual_qty > 1.03 * x.norm_qty
 ORDER BY excess_cost_rub DESC;
@@ -265,8 +250,7 @@ FROM suppliers AS s
 WHERE s.rating > ALL (
     SELECT s2.rating
     FROM suppliers AS s2
-    WHERE s2.region_id = 1
-);
+    WHERE s2.region_id = 1);
 
 -- Задание Б-7.2. Правильно: убираем NULL из подзапроса.
 SELECT s.supplier_id, s.supplier_name, s.rating
@@ -275,8 +259,7 @@ WHERE s.rating > ALL (
     SELECT s2.rating
     FROM suppliers AS s2
     WHERE s2.region_id = 1
-      AND s2.rating IS NOT NULL
-)
+      AND s2.rating IS NOT NULL)
 ORDER BY s.rating DESC;
 
 -- ДОПОЛНИТЕЛЬНОЕ ЗАДАНИЕ 1.
@@ -294,8 +277,7 @@ WHERE rm.material_group = 'Сахар и сиропы'
   AND poi.received_date = (
       SELECT MAX(p2.received_date)
       FROM purchase_order_items AS p2
-      WHERE p2.material_id = rm.material_id
-  )
+      WHERE p2.material_id = rm.material_id)
 ORDER BY rm.material_name, s.supplier_name;
 
 -- ДОПОЛНИТЕЛЬНОЕ ЗАДАНИЕ 2.
@@ -313,8 +295,7 @@ JOIN (
         100.0 * SUM(b2.defect_qty) /
         NULLIF(SUM(b2.produced_qty), 0) AS avg_defect_percent
     FROM production_batches AS b2
-    GROUP BY b2.line_id
-) AS a ON a.line_id = b.line_id
+    GROUP BY b2.line_id) AS a ON a.line_id = b.line_id
 WHERE 100.0 * b.defect_qty / NULLIF(b.produced_qty, 0) > a.avg_defect_percent
 GROUP BY b.line_id, b.shift
 ORDER BY b.line_id, b.shift;
@@ -326,8 +307,7 @@ FROM production_batches AS b
 WHERE 100.0 * b.defect_qty / NULLIF(b.produced_qty, 0) > (
     SELECT 100.0 * SUM(b2.defect_qty) / NULLIF(SUM(b2.produced_qty), 0)
     FROM production_batches AS b2
-    WHERE b2.line_id = b.line_id
-)
+    WHERE b2.line_id = b.line_id)
 GROUP BY b.line_id, b.shift;
 
 -- Вариант с рассчитанным один раз средним по каждой линии.
@@ -339,7 +319,6 @@ JOIN (
            100.0 * SUM(b2.defect_qty) /
            NULLIF(SUM(b2.produced_qty), 0) AS avg_defect_percent
     FROM production_batches AS b2
-    GROUP BY b2.line_id
-) AS a ON a.line_id = b.line_id
+    GROUP BY b2.line_id) AS a ON a.line_id = b.line_id
 WHERE 100.0 * b.defect_qty / NULLIF(b.produced_qty, 0) > a.avg_defect_percent
 GROUP BY b.line_id, b.shift;
