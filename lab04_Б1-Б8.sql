@@ -64,10 +64,8 @@ JOIN (
     SELECT line_id, shift
     FROM production_batches
     GROUP BY line_id, shift
-    ORDER BY 100.0 * SUM(defect_qty) /
-             NULLIF(SUM(produced_qty), 0) DESC
-    LIMIT 1
-) AS worst ON worst.line_id = b.line_id AND worst.shift = b.shift
+    ORDER BY 100.0 * SUM(defect_qty) /NULLIF(SUM(produced_qty), 0) 
+    DESC LIMIT 1) AS worst ON worst.line_id = b.line_id AND worst.shift = b.shift
 GROUP BY b.line_id, b.shift, e.employee_id, e.full_name
 ORDER BY defect_percent DESC;
 
@@ -102,9 +100,7 @@ SELECT
     ROUND(
         (SUM(poi.quantity) FILTER (WHERE po.supplier_id = 3)) *
         ((AVG(poi.unit_price) FILTER (WHERE po.supplier_id = 3)) -
-         (AVG(poi.unit_price) FILTER (WHERE po.supplier_id <> 3))),
-        2
-    ) AS overpayment_rub
+         (AVG(poi.unit_price) FILTER (WHERE po.supplier_id <> 3))),2) AS overpayment_rub
 FROM purchase_order_items AS poi
 JOIN purchase_orders AS po ON po.po_id = poi.po_id
 JOIN raw_materials AS rm ON rm.material_id = poi.material_id
@@ -218,8 +214,7 @@ FROM (
         SUM(poi.received_qty) AS received_qty
     FROM purchase_order_items AS poi
     WHERE poi.received_date IS NOT NULL
-    GROUP BY poi.material_id, EXTRACT(YEAR FROM poi.received_date)
-) AS p
+    GROUP BY poi.material_id, EXTRACT(YEAR FROM poi.received_date)) AS p
 FULL JOIN (
     SELECT
         mc.material_id,
@@ -227,15 +222,14 @@ FULL JOIN (
         SUM(mc.quantity) AS consumed_qty
     FROM material_consumption AS mc
     JOIN production_batches AS b ON b.batch_id = mc.batch_id
-    GROUP BY mc.material_id, EXTRACT(YEAR FROM b.production_date)
-) AS c ON c.material_id = p.material_id AND c.year = p.year
+    GROUP BY mc.material_id, EXTRACT(YEAR FROM b.production_date)) AS c 
+    ON c.material_id = p.material_id AND c.year = p.year
 WHERE COALESCE(p.material_id, c.material_id) = (
     SELECT w.material_id
     FROM material_writeoffs AS w
     GROUP BY w.material_id
     ORDER BY SUM(w.amount) DESC
-    LIMIT 1
-)
+    LIMIT 1)
 ORDER BY year;
 
 -- Б6. ПЕРЕРАСХОД СЫРЬЯ: ФАКТ / НОРМА
@@ -281,8 +275,7 @@ WHERE (rm.material_name ILIKE '%молок%'
           ON mc2.batch_id = b2.batch_id AND mc2.material_id = r2.material_id
       GROUP BY b2.line_id, r2.material_id
       HAVING SUM(mc2.quantity) >
-             1.03 * SUM(r2.qty_per_unit * b2.produced_qty)
-  )
+             1.03 * SUM(r2.qty_per_unit * b2.produced_qty))
 GROUP BY b.line_id, b.shift, r.material_id, rm.material_name
 ORDER BY b.line_id, rm.material_name, b.shift;
 
@@ -302,11 +295,9 @@ FROM production_batches AS b
 GROUP BY GROUPING SETS (
     (b.line_id, EXTRACT(YEAR FROM b.production_date)),
     (b.line_id),
-    (EXTRACT(YEAR FROM b.production_date)),
-    ()
-)
-ORDER BY GROUPING(b.line_id, EXTRACT(YEAR FROM b.production_date)),
-         b.line_id, EXTRACT(YEAR FROM b.production_date);
+    (EXTRACT(YEAR FROM b.production_date)),())
+ORDER BY GROUPING(b.line_id, EXTRACT(YEAR FROM b.production_date)),b.line_id, 
+EXTRACT(YEAR FROM b.production_date);
 
 -- Б8*. ЦЕНА МОЛОЧНОГО ЖИРА ПО КВАРТАЛАМ
 SELECT
@@ -320,4 +311,3 @@ JOIN purchase_orders AS po ON po.po_id = poi.po_id
 WHERE poi.material_id = 14
 GROUP BY DATE_TRUNC('quarter', po.order_date)
 ORDER BY quarter_start;
-
